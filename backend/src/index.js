@@ -24,6 +24,28 @@ app.use('/api/payments', require('./routes/payments'));
 
 app.use((req, _res, next) => { req.io = io; next(); });
 
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'Nexus API',
+    version: '1.0.0',
+    health: '/health',
+    endpoints: {
+      auth: '/api/auth',
+      profiles: '/api/profiles',
+      projects: '/api/projects',
+      proposals: '/api/proposals',
+      contracts: '/api/contracts',
+      messages: '/api/messages',
+      portfolio: '/api/portfolio',
+      payments: '/api/payments',
+    }
+  });
+});
+
+app.get('/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
