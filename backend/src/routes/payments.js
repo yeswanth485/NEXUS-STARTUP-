@@ -4,12 +4,20 @@ const crypto = require('crypto');
 const auth = require('../middleware/auth');
 const supabase = require('../config/supabase');
 
-const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+const getRazorpay = () => {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    throw new Error('RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET must be set');
+  }
+  return new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+};
 
 router.post('/create-order', auth, async (req, res) => {
   const { milestone_id } = req.body;
   const { data: m } = await supabase.from('milestones').select('*, contract:contracts(client_id)').eq('id', milestone_id).single();
   if (!m || m.contract.client_id !== req.user.id) return res.status(403).json({ error: 'Not authorized' });
+
+  let razorpay;
+  try { razorpay = getRazorpay(); } catch (e) { return res.status(500).json({ error: 'Payments not configured' }); }
 
   const order = await razorpay.orders.create({
     amount: Math.round(m.amount * 100),
