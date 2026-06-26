@@ -20,22 +20,42 @@
 1. Open Supabase SQL Editor
 2. Copy the entire contents of `database/schema.sql`
 3. Paste and run (safe to re-run)
-4. Copy the contents of `database/seed.sql`
-5. Paste and run (inserts demo data)
 
 ### 1.3 Create storage buckets
-In Supabase Dashboard → Storage:
-- `avatars` (public)
-- `portfolio` (public)
-- `attachments` (public)
-- `pitchdecks` (public)
+Run `database/storage.sql` in the Supabase SQL Editor. This creates 4 buckets:
 
-For each bucket, set the policy to allow public read and authenticated insert:
+| Bucket | Public | Max size | Allowed types |
+|---|---|---|---|
+| `avatars` | Yes | 2 MB | PNG, JPEG, WebP, GIF |
+| `portfolio` | Yes | 10 MB | Images + PDF |
+| `attachments` | No | 50 MB | Images, PDF, DOC, ZIP, text |
+| `pitchdecks` | No | 100 MB | PDF, PPT |
 
+Each bucket has RLS policies enforcing ownership rules (e.g. only the startup owner can write to `pitchdecks`).
+
+### 1.4 Seed demo data (optional)
+Run the seed script from your local machine with your Supabase service role key:
+
+```bash
+# From the project root
+SUPABASE_URL=https://your-project.supabase.co \
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
+node database/seed.js
 ```
-CREATE POLICY "public_read" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
-CREATE POLICY "auth_insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
-```
+
+This creates 10 demo users with real auth accounts:
+
+| Email | Password | Role |
+|---|---|---|
+| `alex@demo.nexus` | `Demo123!` | freelancer |
+| `sarah@demo.nexus` | `Demo123!` | freelancer |
+| `marcus@demo.nexus` | `Demo123!` | freelancer |
+| `client@demo.nexus` | `Demo123!` | client |
+| `startup@demo.nexus` | `Demo123!` | startup |
+
+Plus 5 more freelancers, 9 projects, 6 proposals, conversations, messages, notifications, and portfolio items — all linked to real auth users.
+
+> **Note**: The raw SQL file `database/seed.sql` is a reference only. Use `database/seed.js` instead — raw SQL inserts fail because profile UUIDs must reference real `auth.users` entries.
 
 ---
 
