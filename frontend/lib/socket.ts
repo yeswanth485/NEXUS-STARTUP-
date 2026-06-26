@@ -1,30 +1,28 @@
-'use client';
+'use client'
+import { io, Socket } from 'socket.io-client'
 
-import { io, Socket } from 'socket.io-client';
+let socket: Socket | null = null
 
-let socket: Socket | null = null;
-
-export const getSocket = (): Socket => {
+export const getSocket = (token?: string): Socket => {
   if (!socket) {
-    socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000', {
+    socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
+      auth: { token },
       withCredentials: true,
       autoConnect: false,
-    });
+    })
   }
-  return socket;
-};
+  return socket
+}
 
-export const connectSocket = (userId: string) => {
-  const s = getSocket();
+export const connectSocket = (token: string) => {
+  const s = getSocket(token)
   if (!s.connected) {
-    s.connect();
-    s.emit('user:online', userId);
+    s.auth = { token }
+    s.connect()
   }
-  return s;
-};
+  return s
+}
 
 export const disconnectSocket = () => {
-  if (socket?.connected) {
-    socket.disconnect();
-  }
-};
+  if (socket?.connected) socket.disconnect()
+}

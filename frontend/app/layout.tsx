@@ -1,24 +1,21 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { AuthProvider } from '@/contexts/AuthContext';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-
-export const metadata: Metadata = {
-  title: 'Nexus — Connect with Customers Directly',
-  description: 'Startup founders and freelancers showcase their deployed projects. Customers browse and connect directly.',
-};
+import './globals.css'
+import { Navbar } from '@/components/layout/Navbar'
+import { AuthProvider } from '@/providers/AuthProvider'
+import { SocketProvider } from '@/providers/SocketProvider'
+import { Toaster } from '@/components/ui/Toaster'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col">
+      <body>
         <AuthProvider>
-          <Navbar />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <SocketProvider>
+            <Navbar />
+            <main>{children}</main>
+            <Toaster />
+          </SocketProvider>
         </AuthProvider>
       </body>
     </html>
-  );
+  )
 }

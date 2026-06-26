@@ -14,6 +14,7 @@ DROP TRIGGER IF EXISTS trg_projects_updated ON public.projects;
 DROP TRIGGER IF EXISTS trg_contracts_updated ON public.contracts;
 DROP TRIGGER IF EXISTS trg_milestones_updated ON public.milestones;
 DROP TRIGGER IF EXISTS trg_companies_updated ON public.companies;
+DROP TRIGGER IF EXISTS trg_new_settings ON public.profiles;
 
 -- DROP existing functions
 DROP FUNCTION IF EXISTS handle_new_user();
@@ -22,6 +23,8 @@ DROP FUNCTION IF EXISTS handle_company_owner();
 DROP FUNCTION IF EXISTS update_proposals_count();
 DROP FUNCTION IF EXISTS update_profile_rating();
 DROP FUNCTION IF EXISTS update_updated_at();
+DROP FUNCTION IF EXISTS handle_new_settings();
+DROP FUNCTION IF EXISTS mark_messages_read(UUID, UUID);
 
 -- DROP existing policies (skip if error)
 DO $$ BEGIN DROP POLICY IF EXISTS "profiles_public_read" ON public.profiles; EXCEPTION WHEN OTHERS THEN NULL; END $$;
@@ -71,6 +74,8 @@ DROP TABLE IF EXISTS public.milestones CASCADE;
 DROP TABLE IF EXISTS public.contracts CASCADE;
 DROP TABLE IF EXISTS public.proposals CASCADE;
 DROP TABLE IF EXISTS public.projects CASCADE;
+DROP TABLE IF EXISTS public.user_settings CASCADE;
+DROP TABLE IF EXISTS public.team_members CASCADE;
 DROP TABLE IF EXISTS public.company_members CASCADE;
 DROP TABLE IF EXISTS public.companies CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
@@ -101,6 +106,21 @@ CREATE TABLE public.profiles (
   linkedin_url TEXT DEFAULT '',
   total_earned NUMERIC DEFAULT 0,
   balance NUMERIC DEFAULT 0,
+  onboarding_complete BOOLEAN DEFAULT false,
+  onboarding_step INT DEFAULT 0,
+  company_name TEXT DEFAULT '',
+  experience_years INT DEFAULT 0,
+  timezone TEXT DEFAULT '',
+  languages TEXT[] DEFAULT '{}',
+  typical_budget TEXT DEFAULT '',
+  looking_to_build TEXT DEFAULT '',
+  team_size INT DEFAULT 1,
+  services_offered TEXT[] DEFAULT '{}',
+  tech_stack TEXT[] DEFAULT '{}',
+  elevator_pitch TEXT DEFAULT '',
+  pitch_deck_url TEXT DEFAULT '',
+  website_url TEXT DEFAULT '',
+  badges JSONB DEFAULT '[]',
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -144,6 +164,45 @@ CREATE TABLE public.company_members (
   joined_at TIMESTAMPTZ DEFAULT now(),
   UNIQUE(company_id, user_id)
 );
+
+-- 3b. TEAM MEMBERS (for startup profiles)
+CREATE TABLE public.team_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  startup_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT DEFAULT '',
+  avatar_url TEXT DEFAULT '',
+  bio TEXT DEFAULT '',
+  linkedin_url TEXT DEFAULT '',
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- 3c. USER SETTINGS
+CREATE TABLE public.user_settings (
+  id UUID REFERENCES public.profiles(id) ON DELETE CASCADE PRIMARY KEY,
+  email_new_message BOOLEAN DEFAULT true,
+  email_new_proposal BOOLEAN DEFAULT true,
+  email_payment BOOLEAN DEFAULT true,
+  email_marketing BOOLEAN DEFAULT false,
+  push_new_message BOOLEAN DEFAULT true,
+  push_proposals BOOLEAN DEFAULT true,
+  show_earnings BOOLEAN DEFAULT false,
+  show_online_status BOOLEAN DEFAULT true,
+  profile_visible BOOLEAN DEFAULT true,
+  theme TEXT DEFAULT 'dark',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- AUTO-CREATE user_settings on profile insert
+CREATE OR REPLACE FUNCTION handle_new_settings()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.user_settings (id) VALUES (NEW.id) ON CONFLICT DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 4. PROJECTS
 CREATE TABLE public.projects (
@@ -280,11 +339,14 @@ CREATE TABLE public.kanban_tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   contract_id UUID REFERENCES public.contracts(id) ON DELETE CASCADE NOT NULL,
   title TEXT NOT NULL,
+  description TEXT DEFAULT '',
   column_name TEXT DEFAULT 'backlog' CHECK (column_name IN ('backlog','in_progress','review','completed')),
   tags TEXT[] DEFAULT '{}',
+  priority TEXT DEFAULT 'medium' CHECK (priority IN ('low','medium','high','urgent')),
   due_date DATE,
   position INT DEFAULT 0,
   assignee_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT now(),
   updated_at TIMESTAMPTZ DEFAULT now()
 );
@@ -323,6 +385,7 @@ CREATE INDEX idx_companies_industry ON public.companies(industry);
 CREATE INDEX idx_company_members_company ON public.company_members(company_id);
 CREATE INDEX idx_company_members_user ON public.company_members(user_id);
 CREATE INDEX idx_company_portfolio_company ON public.company_portfolio(company_id);
+CREATE INDEX idx_team_members_startup ON public.team_members(startup_id);
 
 -- ═══════════════════════════════════════════
 -- FUNCTIONS
@@ -420,6 +483,10 @@ CREATE TRIGGER trg_company_owner
   AFTER INSERT ON public.companies
   FOR EACH ROW EXECUTE FUNCTION handle_company_owner();
 
+CREATE TRIGGER trg_new_settings
+  AFTER INSERT ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION handle_new_settings();
+
 CREATE TRIGGER trg_proposal_count
   AFTER INSERT OR DELETE ON public.proposals
   FOR EACH ROW EXECUTE FUNCTION update_proposals_count();
@@ -427,6 +494,19 @@ CREATE TRIGGER trg_proposal_count
 CREATE TRIGGER trg_update_rating
   AFTER INSERT ON public.reviews
   FOR EACH ROW EXECUTE FUNCTION update_profile_rating();
+
+-- ═══════════════════════════════════════════
+-- RPC FUNCTIONS
+-- ═══════════════════════════════════════════
+
+CREATE OR REPLACE FUNCTION mark_messages_read(p_conversation_id UUID, p_user_id UUID)
+RETURNS VOID AS $$
+BEGIN
+  UPDATE public.messages
+  SET read_by = array_append(read_by, p_user_id)
+  WHERE conversation_id = p_conversation_id AND NOT (p_user_id = ANY(read_by));
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ═══════════════════════════════════════════
 -- ROW LEVEL SECURITY
@@ -536,3 +616,12 @@ CREATE POLICY "kanban_parties" ON public.kanban_tasks FOR ALL USING (
 
 -- NOTIFICATIONS
 CREATE POLICY "notifications_self" ON public.notifications FOR ALL USING (auth.uid() = user_id);
+
+-- TEAM MEMBERS
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "team_public_read" ON public.team_members FOR SELECT USING (true);
+CREATE POLICY "team_owner_write" ON public.team_members FOR ALL USING (auth.uid() = startup_id);
+
+-- USER SETTINGS
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "settings_self" ON public.user_settings FOR ALL USING (auth.uid() = id);

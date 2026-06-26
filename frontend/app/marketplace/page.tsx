@@ -1,124 +1,128 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { Search, Filter, SlidersHorizontal, Grid3X3, List, ArrowUpDown } from 'lucide-react';
-import { cn, fetchAPI } from '@/lib/utils';
-import { projectCategories } from '@/lib/data';
-import ProjectCard from '@/components/ProjectCard';
+'use client'
+import { useState, useEffect, useCallback } from 'react'
+import { motion } from 'framer-motion'
+import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { ProjectCard } from '@/components/marketplace/ProjectCard'
+import { FilterChips } from '@/components/marketplace/FilterChips'
+import { FilterSidebar } from '@/components/marketplace/FilterSidebar'
+import { SubmitProposalModal } from '@/components/modals/SubmitProposalModal'
+import { AuthModal } from '@/components/modals/AuthModal'
+import { useSocket } from '@/hooks/useSocket'
+import { useUIStore } from '@/store/uiStore'
+import api from '@/lib/api'
 
 export default function MarketplacePage() {
-  const [projects, setProjects] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
-  const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [projects, setProjects] = useState<any[]>([])
+  const [category, setCategory] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState<any>({})
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { submitProposalModal, authModal } = useUIStore()
 
   useEffect(() => {
-    fetchProjects();
-  }, [category]);
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
-  const fetchProjects = async () => {
-    setLoading(true);
+  const fetchProjects = useCallback(async () => {
+    setLoading(true)
     try {
-      const params = new URLSearchParams({ limit: '30' });
-      if (category) params.set('category', category);
-      const data = await fetchAPI(`/api/projects?${params}`);
-      setProjects(data.data || []);
-    } catch {
-      setProjects([]);
-    }
-    setLoading(false);
-  };
+      const params: any = { category, q: debouncedQuery }
+      if (filters.budget_max) params.budget_max = filters.budget_max
+      if (filters.level) params.level = filters.level
+      if (filters.type) params.type = filters.type
+      const { data } = await api.get('/projects', { params })
+      setProjects(data || [])
+    } catch {} finally { setLoading(false) }
+  }, [category, debouncedQuery, filters])
 
-  const filtered = projects.filter(p =>
-    !search || p.title.toLowerCase().includes(search.toLowerCase()) ||
-    p.description.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => { fetchProjects() }, [fetchProjects])
+
+  useSocket('new_project', (project: any) => {
+    setProjects((prev) => [project, ...prev])
+  })
 
   return (
-    <div className="min-h-screen bg-surface-50">
-      <div className="bg-white border-b border-surface-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-4xl font-bold text-surface-900">Project Marketplace</h1>
-            <p className="text-surface-500 mt-2">Browse open projects and find your next opportunity</p>
-          </motion.div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-surface-400" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="input-field pl-12"
-            />
+    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Browse Projects</h1>
+            <p className="mt-1 text-sm" style={{ color: 'var(--text2)' }}>Find your next project or hire the best talent</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setFiltersOpen(!filtersOpen)} className={cn('btn-secondary', filtersOpen && 'bg-nexus-100 text-nexus-700')}>
-              <Filter className="w-4 h-4" /> Filters
+
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text3)' }} />
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search projects..."
+                className="w-full pl-10 pr-4 py-3 rounded-xl text-sm text-white outline-none"
+                style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }} />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <X className="w-4 h-4" style={{ color: 'var(--text3)' }} />
+                </button>
+              )}
+            </div>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all lg:hidden"
+              style={{ border: '1px solid var(--border)', color: 'var(--text2)' }}>
+              <SlidersHorizontal className="w-4 h-4" /> Filters
             </button>
-            <div className="flex items-center border border-surface-200 rounded-xl overflow-hidden">
-              <button onClick={() => setView('grid')} className={cn('p-2.5', view === 'grid' ? 'bg-nexus-100 text-nexus-700' : 'text-surface-400 hover:text-surface-600')}>
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-              <button onClick={() => setView('list')} className={cn('p-2.5', view === 'list' ? 'bg-nexus-100 text-nexus-700' : 'text-surface-400 hover:text-surface-600')}>
-                <List className="w-4 h-4" />
-              </button>
+          </div>
+
+          <FilterChips selected={category} onSelect={setCategory} />
+
+          <div className="flex gap-6">
+            <div className="hidden lg:block w-64 shrink-0">
+              <div className="sticky top-24 p-5 rounded-2xl border" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+                <FilterSidebar filters={filters} setFilters={setFilters} onClear={() => setFilters({})} />
+              </div>
+            </div>
+
+            <div className="flex-1">
+              {loading ? (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {[1,2,3,4].map(i => (
+                    <div key={i} className="h-64 rounded-2xl animate-pulse" style={{ background: 'var(--bg2)' }} />
+                  ))}
+                </div>
+              ) : projects.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-lg font-medium text-white">No projects match your filters</p>
+                  <button onClick={() => { setCategory('All'); setFilters({}); setSearchQuery('') }}
+                    className="mt-4 px-6 py-3 rounded-xl text-sm font-semibold text-white"
+                    style={{ background: 'var(--blue)' }}>Clear Filters</button>
+                </div>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {projects.map((project, i) => (
+                    <ProjectCard key={project.id} project={project} index={i} />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
+      </div>
 
-        <div className={cn('overflow-hidden transition-all duration-300', filtersOpen ? 'max-h-40 mb-6' : 'max-h-0')}>
-          <div className="flex flex-wrap gap-2 p-4 bg-white rounded-2xl border border-surface-200">
-            <button onClick={() => setCategory('')} className={cn('px-4 py-2 rounded-xl text-sm font-medium transition-all', !category ? 'bg-nexus-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200')}>
-              All
-            </button>
-            {projectCategories.map(cat => (
-              <button
-                key={cat.value}
-                onClick={() => setCategory(cat.value)}
-                className={cn('px-4 py-2 rounded-xl text-sm font-medium transition-all', category === cat.value ? 'bg-nexus-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200')}
-              >
-                {cat.emoji} {cat.label}
-              </button>
-            ))}
+      {/* Mobile filter sidebar */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div className="absolute right-0 top-0 bottom-0 w-80 p-6 overflow-y-auto" style={{ background: 'var(--bg2)' }}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-semibold text-white">Filters</h3>
+              <button onClick={() => setSidebarOpen(false)}><X className="w-5 h-5" style={{ color: 'var(--text2)' }} /></button>
+            </div>
+            <FilterSidebar filters={filters} setFilters={setFilters} onClear={() => setFilters({})} />
           </div>
         </div>
+      )}
 
-        {loading ? (
-          <div className="grid md:grid-cols-2 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="card p-6 animate-pulse">
-                <div className="h-4 bg-surface-200 rounded w-1/3 mb-4" />
-                <div className="h-6 bg-surface-200 rounded w-2/3 mb-2" />
-                <div className="h-4 bg-surface-200 rounded w-full mb-1" />
-                <div className="h-4 bg-surface-200 rounded w-3/4" />
-              </div>
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-surface-400 text-lg">No projects found</p>
-            <Link href="/projects/new" className="btn-primary mt-4 inline-flex">Post a Project</Link>
-          </div>
-        ) : (
-          <div className={cn(view === 'grid' ? 'grid md:grid-cols-2 gap-4' : 'space-y-4')}>
-            {filtered.map((project, i) => (
-              <motion.div key={project.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <ProjectCard project={project} variant={view === 'list' ? 'compact' : 'default'} />
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
+      {submitProposalModal.open && <SubmitProposalModal />}
+      {authModal && <AuthModal />}
     </div>
-  );
+  )
 }

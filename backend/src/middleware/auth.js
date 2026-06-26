@@ -1,39 +1,17 @@
 const supabase = require('../config/supabase');
-
-async function authenticate(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const token = authHeader.split(' ')[1];
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
-    req.user = user;
-    next();
-  } catch (err) {
-    res.status(500).json({ error: 'Authentication failed' });
+module.exports = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  if (!token) {
+    req.log?.warn?.('missing token');
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-}
-
-async function optionalAuth(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      const { data: { user } } = await supabase.auth.getUser(token);
-      req.user = user || null;
-    }
-    next();
-  } catch {
-    req.user = null;
-    next();
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) {
+    req.log?.warn?.({ error: error?.message }, 'invalid token');
+    return res.status(401).json({ error: 'Invalid token' });
   }
-}
-
-module.exports = { authenticate, optionalAuth };
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  req.user = user;
+  req.profile = profile || {};
+  next();
+};
