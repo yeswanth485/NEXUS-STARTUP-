@@ -82,8 +82,16 @@ app.use('/api/portfolio', require('./routes/portfolio'));
 app.use('/api/team', require('./routes/team'));
 app.use('/api/settings', require('./routes/settings'));
 
+// API root
+app.get('/api', (_, res) => {
+  res.json({ name: 'Nexus API', version: '1.0.0', endpoints: ['/api/auth', '/api/profiles', '/api/projects', '/api/proposals', '/api/contracts', '/api/milestones', '/api/kanban', '/api/messages', '/api/payments', '/api/reviews', '/api/notifications', '/api/portfolio', '/api/team', '/api/settings'] });
+});
+
 // Health check
 app.get('/health', (_, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
+app.get('/api/health', (_, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
