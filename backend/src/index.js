@@ -46,7 +46,7 @@ app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: '10mb' }));
 
 // Structured request logging
-app.use((req, _, next) => {
+app.use((req, res, next) => {
   const start = Date.now();
   req.log = logger.child({ reqId: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` });
   res.on('finish', () => {
