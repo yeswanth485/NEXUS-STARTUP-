@@ -1,10 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { Search } from 'lucide-react'
+import Link from 'next/link'
+import { Search, LayoutDashboard } from 'lucide-react'
+import { useAuth } from '@/providers/AuthProvider'
 import { FreelancerCard } from '@/components/freelancers/FreelancerCard'
 import api from '@/lib/api'
 
 export default function FreelancersPage() {
+  const { user } = useAuth()
   const [freelancers, setFreelancers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -27,9 +30,16 @@ export default function FreelancersPage() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">Find Expert Freelancers</h1>
-          <p className="mt-1 text-sm" style={{ color: 'var(--text2)' }}>Browse vetted professionals across every skill set</p>
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Find Expert Freelancers</h1>
+            <p className="mt-1 text-sm" style={{ color: 'var(--text2)' }}>Browse vetted professionals across every skill set</p>
+          </div>
+          {user && (
+            <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5 shrink-0" style={{ color: 'var(--text2)' }}>
+              <LayoutDashboard className="w-4 h-4" /> Dashboard
+            </Link>
+          )}
         </div>
         <div className="flex items-center gap-3 mb-8">
           <div className="relative flex-1 max-w-md">

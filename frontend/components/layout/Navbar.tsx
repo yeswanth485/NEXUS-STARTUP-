@@ -44,6 +44,20 @@ export function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
+            {user && (
+              <Link href="/dashboard"
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                  pathname === '/dashboard'
+                    ? 'text-white bg-blue-500/20'
+                    : 'hover:text-white hover:bg-white/5'
+                )}
+                style={{ color: pathname === '/dashboard' ? undefined : 'var(--text2)' }}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+              </Link>
+            )}
             {navLinks.map(link => (
               <Link key={link.href} href={link.href}
                 className={cn(
@@ -136,6 +150,14 @@ export function Navbar() {
         {mobileOpen && (
           <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="md:hidden overflow-hidden border-t" style={{ borderColor: 'var(--border)' }}>
             <div className="px-4 py-3 space-y-1">
+              {user && (
+                <Link href="/dashboard" onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"
+                  style={{ color: 'var(--text2)' }}>
+                  <LayoutDashboard className="w-5 h-5" style={{ color: 'var(--text3)' }} />
+                  Dashboard
+                </Link>
+              )}
               {navLinks.map(link => (
                 <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"

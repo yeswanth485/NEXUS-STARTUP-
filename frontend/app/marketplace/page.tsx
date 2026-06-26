@@ -1,7 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Search, SlidersHorizontal, X } from 'lucide-react'
+import Link from 'next/link'
+import { Search, SlidersHorizontal, X, LayoutDashboard } from 'lucide-react'
+import { useAuth } from '@/providers/AuthProvider'
 import { ProjectCard } from '@/components/marketplace/ProjectCard'
 import { FilterChips } from '@/components/marketplace/FilterChips'
 import { FilterSidebar } from '@/components/marketplace/FilterSidebar'
@@ -12,6 +14,7 @@ import { useUIStore } from '@/store/uiStore'
 import api from '@/lib/api'
 
 export default function MarketplacePage() {
+  const { user } = useAuth()
   const [projects, setProjects] = useState<any[]>([])
   const [category, setCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
@@ -48,9 +51,16 @@ export default function MarketplacePage() {
     <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col gap-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Browse Projects</h1>
-            <p className="mt-1 text-sm" style={{ color: 'var(--text2)' }}>Find your next project or hire the best talent</p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-white">Browse Projects</h1>
+              <p className="mt-1 text-sm" style={{ color: 'var(--text2)' }}>Find your next project or hire the best talent</p>
+            </div>
+            {user && (
+              <Link href="/dashboard" className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all hover:bg-white/5" style={{ color: 'var(--text2)' }}>
+                <LayoutDashboard className="w-4 h-4" /> Dashboard
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

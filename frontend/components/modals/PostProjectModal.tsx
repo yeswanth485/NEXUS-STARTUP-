@@ -46,7 +46,7 @@ export function PostProjectModal() {
         <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
           className="w-full max-w-xl rounded-3xl border p-8 relative max-h-[90vh] overflow-y-auto" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
           <button onClick={() => setPostProjectModal(false)} className="absolute top-4 right-4 p-2 rounded-xl hover:bg-white/5"><X className="w-5 h-5" style={{ color: 'var(--text3)' }} /></button>
-          <h2 className="text-2xl font-bold text-white mb-6">Post a Project</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">Add Your Project</h2>
           <form onSubmit={submit} className="space-y-4">
             <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Project Title *" required className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none" style={{background:'var(--bg3)',border:'1px solid var(--border)'}} />
             <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} required className="w-full px-4 py-3 rounded-xl text-sm outline-none" style={{background:'var(--bg3)',border:'1px solid var(--border)', color: form.category ? 'white' : 'var(--text3)'}}>
@@ -81,7 +81,7 @@ export function PostProjectModal() {
               <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag())} placeholder="Add skill and press Enter" className="w-full px-4 py-3 rounded-xl text-sm text-white outline-none" style={{background:'var(--bg3)',border:'1px solid var(--border)'}} />
             </div>
             <button type="submit" disabled={loading} className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all disabled:opacity-50" style={{background:'var(--blue)'}}>
-              {loading ? 'Posting...' : 'Post Project'}
+              {loading ? 'Adding...' : 'Add Project'}
             </button>
           </form>
         </motion.div>
