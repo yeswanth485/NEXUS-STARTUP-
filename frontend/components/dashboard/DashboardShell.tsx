@@ -1,6 +1,6 @@
 'use client'
 import { motion } from 'framer-motion'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Plus } from 'lucide-react'
 import { ClientSidebar } from './sidebar/ClientSidebar'
 import { FreelancerSidebar } from './sidebar/FreelancerSidebar'
 import { StartupSidebar } from './sidebar/StartupSidebar'
@@ -22,6 +22,7 @@ import { MessagesTab } from './tabs/MessagesTab'
 import { NotificationsTab } from './tabs/NotificationsTab'
 import { SettingsTab } from './tabs/SettingsTab'
 import { CalendarTab } from './tabs/CalendarTab'
+import { PaymentsTab } from './tabs/PaymentsTab'
 
 const sidebars: Record<string, any> = {
   client: ClientSidebar,
@@ -51,6 +52,7 @@ export function DashboardShell() {
     notifications: NotificationsTab,
     settings: SettingsTab,
     calendar: CalendarTab,
+    payments: PaymentsTab,
   }
   const ActiveTab = tabs[activeTab] || OverviewTab
 
@@ -75,6 +77,13 @@ export function DashboardShell() {
           <ActiveTab />
         </motion.div>
       </main>
+      {profile?.role === 'client' && (
+        <button onClick={() => useUIStore.getState().setPostProjectModal(true)}
+          className="fixed bottom-24 right-6 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 lg:bottom-8"
+          style={{ background: 'var(--blue)' }}>
+          <Plus className="w-6 h-6 text-white" />
+        </button>
+      )}
       <MobileBottomNav />
     </div>
   )

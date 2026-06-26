@@ -1,9 +1,10 @@
 'use client'
 import { useUIStore } from '@/store/uiStore'
-import { BarChart3, Building2, Users, Search, Send, Briefcase, DollarSign, MessageCircle, Bell, Settings } from 'lucide-react'
+import { BarChart3, User, Building2, Users, Search, Send, Briefcase, DollarSign, MessageCircle, Bell, Settings } from 'lucide-react'
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
+  { id: 'profile', label: 'My Profile', icon: User },
   { id: 'company', label: 'Company Profile', icon: Building2 },
   { id: 'team', label: 'My Team', icon: Users },
   { id: 'browse', label: 'Browse Projects', icon: Search },

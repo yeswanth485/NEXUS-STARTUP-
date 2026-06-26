@@ -1,9 +1,10 @@
 'use client'
 import { useUIStore } from '@/store/uiStore'
-import { BarChart3, Briefcase, Mail, FileText, DollarSign, Bell, Settings, MessageCircle } from 'lucide-react'
+import { BarChart3, User, Briefcase, FileText, Mail, DollarSign, MessageCircle, Bell, Settings } from 'lucide-react'
 
 const tabs = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
+  { id: 'profile', label: 'My Profile', icon: User },
   { id: 'projects', label: 'Posted Projects', icon: Briefcase },
   { id: 'proposals', label: 'Received Proposals', icon: FileText },
   { id: 'contracts', label: 'Active Contracts', icon: Mail },
