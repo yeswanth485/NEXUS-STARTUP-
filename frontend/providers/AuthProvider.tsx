@@ -12,6 +12,8 @@ const supabase = createBrowserClient(
 const AuthCtx = createContext<any>(null)
 export const useAuth = () => useContext(AuthCtx)
 
+const PUBLIC_PAGES = ['/', '/login', '/signup', '/onboarding', '/marketplace', '/freelancers', '/startups']
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setAuth, clearAuth } = useAuthStore()
   const router = useRouter()
@@ -19,12 +21,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const redirectedRef = useRef(false)
 
-  const handleProfileRedirect = useCallback((profile: any) => {
+  const redirectUser = useCallback((profile: any) => {
     if (redirectedRef.current) return
-    const isLandingPage = pathname === '/' || pathname === '/login' || pathname === '/signup'
-    if (profile && !profile.onboarding_complete && !isLandingPage && pathname !== '/onboarding') {
+    if (!profile) return
+
+    const isPublicPage = PUBLIC_PAGES.includes(pathname)
+
+    if (!profile.onboarding_complete && pathname !== '/onboarding') {
       redirectedRef.current = true
       router.replace('/onboarding')
+    } else if (profile.onboarding_complete && pathname === '/onboarding') {
+      redirectedRef.current = true
+      router.replace('/dashboard')
+    } else if (profile.onboarding_complete && (pathname === '/login' || pathname === '/signup')) {
+      redirectedRef.current = true
+      router.replace('/dashboard')
     }
   }, [pathname, router])
 
@@ -33,7 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data: profile }) => {
           setAuth(session.user, profile, session.access_token)
-          handleProfileRedirect(profile)
+          redirectUser(profile)
           setLoading(false)
         }, () => {
           setLoading(false)
@@ -49,10 +60,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session) {
         const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
         setAuth(session.user, profile, session.access_token)
-        if (event === 'SIGNED_IN') redirectedRef.current = false
-        handleProfileRedirect(profile)
+        if (event === 'SIGNED_IN') {
+          redirectedRef.current = false
+          setTimeout(() => redirectUser(profile), 100)
+        }
       } else {
         clearAuth()
+        redirectedRef.current = false
       }
       setLoading(false)
     })

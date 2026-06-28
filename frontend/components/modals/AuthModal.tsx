@@ -1,18 +1,16 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Eye, EyeOff, Mail, Lock, User, Github } from 'lucide-react'
+import { X, Eye, EyeOff, Mail, Lock, Github } from 'lucide-react'
 import { useAuth } from '@/providers/AuthProvider'
 import { useUIStore } from '@/store/uiStore'
 import { useToast } from '@/components/ui/Toaster'
 import { cn } from '@/lib/utils'
-import { useRouter } from 'next/navigation'
 
 export function AuthModal() {
   const { authModal, setAuthModal } = useUIStore()
-  const { signUp, signIn, signInWithOAuth, profile } = useAuth()
+  const { signUp, signIn, signInWithOAuth } = useAuth()
   const { toast } = useToast()
-  const router = useRouter()
   const [tab, setTab] = useState<'signin' | 'signup'>(authModal || 'signin')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -28,16 +26,10 @@ export function AuthModal() {
         await signUp(form.email, form.password, `${form.firstName} ${form.lastName}`.trim())
         toast('success', 'Account created!', 'Setting up your profile...')
         setAuthModal(null)
-        setTimeout(() => router.push('/onboarding'), 500)
       } else {
         await signIn(form.email, form.password)
         toast('success', 'Welcome back!')
         setAuthModal(null)
-        setTimeout(() => {
-          if (profile && profile.onboarding_complete) {
-            router.push('/dashboard')
-          }
-        }, 500)
       }
     } catch (err: any) {
       toast('error', err.message || 'Something went wrong')
