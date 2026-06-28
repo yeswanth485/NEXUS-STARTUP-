@@ -35,13 +35,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuth(session.user, profile, session.access_token)
           handleProfileRedirect(profile)
           setLoading(false)
-        }).catch(() => {
+        }, () => {
           setLoading(false)
         })
       } else {
         setLoading(false)
       }
-    }).catch(() => {
+    }, () => {
       setLoading(false)
     })
 
