@@ -17,52 +17,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [loading, setLoading] = useState(true)
-  const didRun = useRef(false)
-  const pathnameRef = useRef(pathname)
+  const didInit = useRef(false)
 
-  useEffect(() => { pathnameRef.current = pathname }, [pathname])
-
-  const handleAuth = async (userId: string) => {
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single()
-    return profile
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    return data
   }
 
-  const runRedirect = (profile: any) => {
+  const redirectUser = (profile: any) => {
     if (!profile) return
-    const p = pathnameRef.current
+    const p = window.location.pathname
     const onOnboarding = p === '/onboarding'
-    const onLoginOrSignup = p === '/login' || p === '/signup'
+    const onAuthPage = p === '/login' || p === '/signup' || p === '/'
 
     if (!profile.onboarding_complete && !onOnboarding) {
       router.replace('/onboarding')
-    } else if (profile.onboarding_complete && (onOnboarding || onLoginOrSignup)) {
+    } else if (profile.onboarding_complete && (onOnboarding || onAuthPage)) {
       router.replace('/dashboard')
     }
   }
 
+  const handleSignIn = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+    if (data.user) {
+      const profile = await fetchProfile(data.user.id)
+      setAuth(data.user, profile, data.session?.access_token ?? '')
+      redirectUser(profile)
+    }
+    return data
+  }
+
+  const handleSignUp = async (email: string, password: string, full_name: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name } }
+    })
+    if (error) throw error
+    if (data.user) {
+      const profile = await fetchProfile(data.user.id)
+      setAuth(data.user, profile, data.session?.access_token ?? '')
+      redirectUser(profile)
+    }
+    return data
+  }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    clearAuth()
+    router.push('/')
+  }
+
+  const handleOAuth = async (provider: 'google' | 'github') => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider })
+    if (error) throw error
+  }
+
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const profile = await handleAuth(session.user.id)
+        const profile = await fetchProfile(session.user.id)
         setAuth(session.user, profile, session.access_token)
-        if (!didRun.current) {
-          didRun.current = true
-          runRedirect(profile)
+        if (!didInit.current) {
+          didInit.current = true
+          redirectUser(profile)
         }
       }
       setLoading(false)
-    }, () => { setLoading(false) })
+    }
+    init()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        const profile = await handleAuth(session.user.id)
+        const profile = await fetchProfile(session.user.id)
         setAuth(session.user, profile, session.access_token)
-        runRedirect(profile)
+        redirectUser(profile)
       } else if (event === 'SIGNED_OUT') {
         clearAuth()
         router.replace('/')
       } else if (session) {
-        const profile = await handleAuth(session.user.id)
+        const profile = await fetchProfile(session.user.id)
         setAuth(session.user, profile, session.access_token)
       }
       setLoading(false)
@@ -70,37 +105,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string, full_name: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name } }
-    })
-    if (error) throw error
-    return data
-  }
-
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    return data
-  }
-
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    clearAuth()
-    didRun.current = false
-    router.push('/')
-  }
-
-  const signInWithOAuth = async (provider: 'google' | 'github') => {
-    const { error } = await supabase.auth.signInWithOAuth({ provider })
-    if (error) throw error
-  }
-
   const { user, profile } = useAuthStore()
 
   return (
-    <AuthCtx.Provider value={{ user, profile, loading, signUp, signIn, signOut, signInWithOAuth, supabase }}>
+    <AuthCtx.Provider value={{
+      user, profile, loading,
+      signUp: handleSignUp,
+      signIn: handleSignIn,
+      signOut: handleSignOut,
+      signInWithOAuth: handleOAuth,
+      supabase
+    }}>
       {children}
     </AuthCtx.Provider>
   )
