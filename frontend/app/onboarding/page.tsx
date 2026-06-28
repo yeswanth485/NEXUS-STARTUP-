@@ -54,9 +54,10 @@ export default function OnboardingPage() {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
       await updateProfile({ step: 4, avatar_url: publicUrl })
       setForm((prev: any) => ({ ...prev, avatar_url: publicUrl }))
-      toast('success', 'Photo uploaded!')
-    } catch (err: any) { toast('error', err.message || 'Upload failed') }
-    finally { setLoading(false) }
+      toast('success', 'Photo uploaded!', 'Your avatar has been updated successfully.')
+    } catch (err: any) {
+      toast('error', 'Upload failed', err.message || 'Could not upload image. Please try again.')
+    } finally { setLoading(false) }
   }
 
   const nextStep = async () => {
@@ -127,11 +128,25 @@ export default function OnboardingPage() {
                 <div>
                   <label className="text-sm font-medium text-white mb-2 block">Profile Photo (optional)</label>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && uploadAvatar(e.target.files[0])} />
-                  <button onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm transition-all"
-                    style={{ border: '1px dashed var(--border2)', color: 'var(--text2)' }}>
-                    <Upload className="w-4 h-4" /> Upload Photo
-                  </button>
+                  {form.avatar_url ? (
+                    <div className="flex items-center gap-4">
+                      <img src={form.avatar_url} alt="Avatar preview" className="w-20 h-20 rounded-full object-cover border-2" style={{ borderColor: 'var(--blue)' }} />
+                      <div className="flex flex-col gap-2">
+                        <button onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all"
+                          style={{ border: '1px solid var(--border)', color: 'var(--text2)' }}>
+                          <Upload className="w-4 h-4" /> Change Photo
+                        </button>
+                        <span className="text-xs" style={{ color: '#22c55e' }}>Uploaded successfully</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm transition-all"
+                      style={{ border: '1px dashed var(--border2)', color: 'var(--text2)' }}>
+                      <Upload className="w-4 h-4" /> Upload Photo
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end mt-8">

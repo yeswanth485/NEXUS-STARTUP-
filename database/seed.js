@@ -86,14 +86,17 @@ async function seed() {
     return;
   }
 
-  const getId = (email: string) => profiles.find(p => p.email === email)?.id;
-  const cId = getId('client@demo.nexus');
-  const sId = getId('startup@demo.nexus');
-  const f1 = getId('alex@demo.nexus');
-  const f2 = getId('sarah@demo.nexus');
-  const f3 = getId('marcus@demo.nexus');
-  const f4 = getId('james@demo.nexus');
-  const f5 = getId('ethan@demo.nexus');
+  const idMap = (email: string) => profiles.find(p => p.email === email)?.id;
+  const cId = idMap('client@demo.nexus');
+  const sId = idMap('startup@demo.nexus');
+  const f1 = idMap('alex@demo.nexus');
+  const f2 = idMap('sarah@demo.nexus');
+  const f3 = idMap('marcus@demo.nexus');
+  const f4 = idMap('james@demo.nexus');
+  const f5 = idMap('ethan@demo.nexus');
+  const f6 = idMap('luna@demo.nexus');
+  const f7 = idMap('priya@demo.nexus');
+  const f8 = idMap('maya@demo.nexus');
 
   console.log('\nSeeding companies...');
   if (sId) {
@@ -143,11 +146,30 @@ async function seed() {
   console.log('  6 proposals created');
 
   console.log('Seeding conversations & messages...');
-  const conv1 = { participant_ids: [cId, f1].sort(), project_id: 'b0000000-0000-0000-0000-000000000001', last_message: 'Sounds good, lets start next week!', last_message_at: new Date().toISOString() };
+  const now = new Date();
+  const hoursAgo = (h: number) => new Date(now.getTime() - h * 3600000).toISOString();
+  const conv1 = { participant_ids: [cId, f1].sort(), project_id: 'b0000000-0000-0000-0000-000000000001', last_message: 'Sounds good, lets start next week!', last_message_at: hoursAgo(3) };
   if (cId && f1) await supabase.from('conversations').upsert({ id: 'd0000000-0000-0000-0000-000000000001', ...conv1 });
-  const conv2 = { participant_ids: [cId, f5].sort(), project_id: 'b0000000-0000-0000-0000-000000000004', last_message: 'Great proposal! Lets schedule a call.', last_message_at: new Date().toISOString() };
-  if (cId && f5) await supabase.from('conversations').upsert({ id: 'd0000000-0000-0000-0000-000000000003', ...conv2 });
-  console.log('  Conversations created');
+  const conv2 = { participant_ids: [sId, f3].sort(), project_id: 'b0000000-0000-0000-0000-000000000010', last_message: 'Can you share some examples of your chatbot work?', last_message_at: hoursAgo(1) };
+  if (sId && f3) await supabase.from('conversations').upsert({ id: 'd0000000-0000-0000-0000-000000000002', ...conv2 });
+  const conv3 = { participant_ids: [cId, f5].sort(), project_id: 'b0000000-0000-0000-0000-000000000004', last_message: 'Great proposal! Lets schedule a call.', last_message_at: hoursAgo(24) };
+  if (cId && f5) await supabase.from('conversations').upsert({ id: 'd0000000-0000-0000-0000-000000000003', ...conv3 });
+
+  const messages = [
+    { conversation_id: 'd0000000-0000-0000-0000-000000000001', sender_id: f1, content: 'Hi! I saw your project and I am very interested.', created_at: hoursAgo(5) },
+    { conversation_id: 'd0000000-0000-0000-0000-000000000001', sender_id: cId, content: 'Great! Your portfolio looks impressive.', created_at: hoursAgo(4) },
+    { conversation_id: 'd0000000-0000-0000-0000-000000000001', sender_id: f1, content: 'Thank you! I have attached some similar projects I have worked on.', created_at: hoursAgo(3.5) },
+    { conversation_id: 'd0000000-0000-0000-0000-000000000001', sender_id: cId, content: 'Sounds good, lets start next week!', created_at: hoursAgo(3) },
+    { conversation_id: 'd0000000-0000-0000-0000-000000000002', sender_id: f3, content: 'Hello! I specialize in GPT-4 and LangChain integrations.', created_at: hoursAgo(2) },
+    { conversation_id: 'd0000000-0000-0000-0000-000000000002', sender_id: sId, content: 'Can you share some examples of your chatbot work?', created_at: hoursAgo(1) },
+    { conversation_id: 'd0000000-0000-0000-0000-000000000003', sender_id: f5, content: 'I have a detailed strategy document ready for your review.', created_at: hoursAgo(48) },
+    { conversation_id: 'd0000000-0000-0000-0000-000000000003', sender_id: cId, content: 'Great proposal! Lets schedule a call.', created_at: hoursAgo(24) },
+  ];
+  for (const m of messages) {
+    if (!m.sender_id) continue;
+    await supabase.from('messages').insert(m);
+  }
+  console.log('  Conversations & messages created');
 
   console.log('Seeding notifications...');
   const notifs = [
@@ -155,6 +177,7 @@ async function seed() {
     { user_id: cId, type: 'proposal', title: 'New Proposal Received', body: 'Sarah Chen submitted a proposal for "E-Learning Platform Dashboard"', link: '/dashboard?tab=proposals' },
     { user_id: sId, type: 'proposal', title: 'New Proposal Received', body: 'Alex Rivera submitted a proposal for "E-Commerce Analytics Dashboard"', link: '/dashboard?tab=proposals' },
     { user_id: f1, type: 'message', title: 'New Message', body: 'TechVentures Inc sent you a message', link: '/chat' },
+    { user_id: f3, type: 'message', title: 'New Message', body: 'Nova AI sent you a message', link: '/chat' },
     { user_id: f5, type: 'message', title: 'New Message', body: 'TechVentures Inc sent you a message', link: '/chat' },
     { user_id: cId, type: 'system', title: 'Profile Views Milestone', body: 'Your project has received 50+ views!', link: '/marketplace' },
   ];
@@ -163,6 +186,24 @@ async function seed() {
     await supabase.from('notifications').insert(n);
   }
   console.log(`  ${notifs.filter(n => n.user_id).length} notifications created`);
+
+  console.log('Seeding team members...');
+  const teamMembers = [
+    { startup_id: sId, name: 'David Park', role: 'CEO & Founder', bio: 'Former ML engineer at Google. Building the future of e-commerce analytics.', linkedin_url: 'https://linkedin.com/in/davidpark', sort_order: 0 },
+    { startup_id: sId, name: 'Lisa Kim', role: 'CTO', bio: 'Full-stack engineer with 8 years of experience in data-intensive applications.', linkedin_url: 'https://linkedin.com/in/lisakim', sort_order: 1 },
+    { startup_id: sId, name: 'Mike Torres', role: 'Head of Design', bio: 'Product designer who has worked with 10+ YC startups on their UX.', linkedin_url: 'https://linkedin.com/in/miketorres', sort_order: 2 },
+  ];
+  for (const t of teamMembers) {
+    if (!t.startup_id) continue;
+    await supabase.from('team_members').insert(t);
+  }
+  console.log(`  ${teamMembers.filter(t => t.startup_id).length} team members created`);
+
+  console.log('Seeding reviews...');
+  if (cId && f1) {
+    await supabase.from('reviews').insert({ contract_id: '00000000-0000-0000-0000-000000000001', reviewer_id: cId, reviewee_id: f1, rating: 5, comment: 'Excellent work! Delivered ahead of schedule and exceeded expectations.', created_at: hoursAgo(720) });
+  }
+  console.log('  1 review created');
 
   console.log('Seeding portfolio items...');
   const portfolioItems = [

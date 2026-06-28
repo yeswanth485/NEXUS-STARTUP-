@@ -5,14 +5,21 @@ import { useAuth } from '@/providers/AuthProvider'
 import { useUIStore } from '@/store/uiStore'
 
 export default function LoginPage() {
-  const { user, loading } = useAuth()
+  const { user, loading, profile } = useAuth()
   const router = useRouter()
   const setAuthModal = useUIStore((s) => s.setAuthModal)
 
   useEffect(() => {
-    if (user) { router.replace('/dashboard'); return }
+    if (user) {
+      if (profile && profile.onboarding_complete) {
+        router.replace('/dashboard')
+      } else {
+        router.replace('/onboarding')
+      }
+      return
+    }
     if (!loading) setAuthModal('signin')
-  }, [user, loading])
+  }, [user, loading, profile])
 
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>

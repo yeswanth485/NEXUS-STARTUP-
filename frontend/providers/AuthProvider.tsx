@@ -21,7 +21,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleProfileRedirect = useCallback((profile: any) => {
     if (redirectedRef.current) return
-    if (profile && !profile.onboarding_complete && pathname !== '/onboarding') {
+    const isLandingPage = pathname === '/' || pathname === '/login' || pathname === '/signup'
+    if (profile && !profile.onboarding_complete && !isLandingPage && pathname !== '/onboarding') {
       redirectedRef.current = true
       router.replace('/onboarding')
     }
@@ -34,10 +35,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setAuth(session.user, profile, session.access_token)
           handleProfileRedirect(profile)
           setLoading(false)
+        }).catch(() => {
+          setLoading(false)
         })
       } else {
         setLoading(false)
       }
+    }).catch(() => {
+      setLoading(false)
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {

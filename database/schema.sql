@@ -3,18 +3,18 @@
 -- Safe to re-run: drops existing objects first
 -- ═══════════════════════════════════════════
 
--- DROP existing triggers (order matters - drop triggers before functions)
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP TRIGGER IF EXISTS trg_startup_company ON public.profiles;
-DROP TRIGGER IF EXISTS trg_company_owner ON public.companies;
-DROP TRIGGER IF EXISTS trg_proposal_count ON public.proposals;
-DROP TRIGGER IF EXISTS trg_update_rating ON public.reviews;
-DROP TRIGGER IF EXISTS trg_profiles_updated ON public.profiles;
-DROP TRIGGER IF EXISTS trg_projects_updated ON public.projects;
-DROP TRIGGER IF EXISTS trg_contracts_updated ON public.contracts;
-DROP TRIGGER IF EXISTS trg_milestones_updated ON public.milestones;
-DROP TRIGGER IF EXISTS trg_companies_updated ON public.companies;
-DROP TRIGGER IF EXISTS trg_new_settings ON public.profiles;
+-- DROP existing triggers (safe on fresh database — checks table existence)
+DO $$ BEGIN IF to_regclass('auth.users') IS NOT NULL THEN DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.profiles') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_startup_company ON public.profiles; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.companies') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_company_owner ON public.companies; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.proposals') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_proposal_count ON public.proposals; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.reviews') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_update_rating ON public.reviews; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.profiles') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_profiles_updated ON public.profiles; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.projects') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_projects_updated ON public.projects; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.contracts') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_contracts_updated ON public.contracts; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.milestones') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_milestones_updated ON public.milestones; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.companies') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_companies_updated ON public.companies; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
+DO $$ BEGIN IF to_regclass('public.profiles') IS NOT NULL THEN DROP TRIGGER IF EXISTS trg_new_settings ON public.profiles; END IF; EXCEPTION WHEN OTHERS THEN NULL; END $$;
 
 -- DROP existing functions
 DROP FUNCTION IF EXISTS handle_new_user();
