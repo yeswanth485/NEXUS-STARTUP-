@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useAuthStore } from '@/store/authStore'
 import { useRouter, usePathname } from 'next/navigation'
@@ -12,61 +12,58 @@ const supabase = createBrowserClient(
 const AuthCtx = createContext<any>(null)
 export const useAuth = () => useContext(AuthCtx)
 
-const PUBLIC_PAGES = ['/', '/login', '/signup', '/onboarding', '/marketplace', '/freelancers', '/startups']
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setAuth, clearAuth } = useAuthStore()
   const router = useRouter()
   const pathname = usePathname()
   const [loading, setLoading] = useState(true)
-  const redirectedRef = useRef(false)
+  const didRun = useRef(false)
+  const pathnameRef = useRef(pathname)
 
-  const redirectUser = useCallback((profile: any) => {
-    if (redirectedRef.current) return
+  useEffect(() => { pathnameRef.current = pathname }, [pathname])
+
+  const handleAuth = async (userId: string) => {
+    const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single()
+    return profile
+  }
+
+  const runRedirect = (profile: any) => {
     if (!profile) return
+    const p = pathnameRef.current
+    const onOnboarding = p === '/onboarding'
+    const onLoginOrSignup = p === '/login' || p === '/signup'
 
-    const isPublicPage = PUBLIC_PAGES.includes(pathname)
-
-    if (!profile.onboarding_complete && pathname !== '/onboarding') {
-      redirectedRef.current = true
+    if (!profile.onboarding_complete && !onOnboarding) {
       router.replace('/onboarding')
-    } else if (profile.onboarding_complete && pathname === '/onboarding') {
-      redirectedRef.current = true
-      router.replace('/dashboard')
-    } else if (profile.onboarding_complete && (pathname === '/login' || pathname === '/signup')) {
-      redirectedRef.current = true
+    } else if (profile.onboarding_complete && (onOnboarding || onLoginOrSignup)) {
       router.replace('/dashboard')
     }
-  }, [pathname, router])
+  }
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        supabase.from('profiles').select('*').eq('id', session.user.id).single().then(({ data: profile }) => {
-          setAuth(session.user, profile, session.access_token)
-          redirectUser(profile)
-          setLoading(false)
-        }, () => {
-          setLoading(false)
-        })
-      } else {
-        setLoading(false)
+        const profile = await handleAuth(session.user.id)
+        setAuth(session.user, profile, session.access_token)
+        if (!didRun.current) {
+          didRun.current = true
+          runRedirect(profile)
+        }
       }
-    }, () => {
       setLoading(false)
-    })
+    }, () => { setLoading(false) })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session) {
-        const { data: profile } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
+      if (event === 'SIGNED_IN' && session) {
+        const profile = await handleAuth(session.user.id)
         setAuth(session.user, profile, session.access_token)
-        if (event === 'SIGNED_IN') {
-          redirectedRef.current = false
-          setTimeout(() => redirectUser(profile), 100)
-        }
-      } else {
+        runRedirect(profile)
+      } else if (event === 'SIGNED_OUT') {
         clearAuth()
-        redirectedRef.current = false
+        router.replace('/')
+      } else if (session) {
+        const profile = await handleAuth(session.user.id)
+        setAuth(session.user, profile, session.access_token)
       }
       setLoading(false)
     })
@@ -91,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut()
     clearAuth()
-    redirectedRef.current = false
+    didRun.current = false
     router.push('/')
   }
 

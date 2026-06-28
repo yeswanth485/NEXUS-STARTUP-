@@ -11,20 +11,23 @@ export function AuthModal() {
   const { authModal, setAuthModal } = useUIStore()
   const { signUp, signIn, signInWithOAuth } = useAuth()
   const { toast } = useToast()
-  const [tab, setTab] = useState<'signin' | 'signup'>(authModal || 'signin')
+  const [tab, setTab] = useState<'signin' | 'signup'>('signin')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' })
 
-  useEffect(() => { setTab(authModal || 'signin') }, [authModal])
+  useEffect(() => {
+    if (authModal) setTab(authModal)
+  }, [authModal])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {
       if (tab === 'signup') {
-        await signUp(form.email, form.password, `${form.firstName} ${form.lastName}`.trim())
-        toast('success', 'Account created!', 'Setting up your profile...')
+        const name = `${form.firstName} ${form.lastName}`.trim()
+        await signUp(form.email, form.password, name)
+        toast('success', 'Account created!', 'Redirecting to setup...')
         setAuthModal(null)
       } else {
         await signIn(form.email, form.password)

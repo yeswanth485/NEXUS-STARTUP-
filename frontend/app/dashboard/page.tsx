@@ -1,6 +1,5 @@
 'use client'
 import { DashboardShell } from '@/components/dashboard/DashboardShell'
-import { AuthModal } from '@/components/modals/AuthModal'
 import { PostProjectModal } from '@/components/modals/PostProjectModal'
 import { SubmitProposalModal } from '@/components/modals/SubmitProposalModal'
 import { useUIStore } from '@/store/uiStore'
@@ -11,7 +10,7 @@ import { useEffect } from 'react'
 export default function DashboardPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
-  const { authModal, postProjectModal, submitProposalModal } = useUIStore()
+  const { postProjectModal, submitProposalModal } = useUIStore()
 
   useEffect(() => {
     if (!loading && !user) router.push('/?auth=signin')
@@ -26,7 +25,6 @@ export default function DashboardPage() {
   return (
     <>
       <DashboardShell />
-      {authModal && <AuthModal />}
       {postProjectModal && <PostProjectModal />}
       {submitProposalModal.open && <SubmitProposalModal />}
     </>

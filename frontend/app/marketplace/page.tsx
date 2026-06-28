@@ -8,7 +8,6 @@ import { ProjectCard } from '@/components/marketplace/ProjectCard'
 import { FilterChips } from '@/components/marketplace/FilterChips'
 import { FilterSidebar } from '@/components/marketplace/FilterSidebar'
 import { SubmitProposalModal } from '@/components/modals/SubmitProposalModal'
-import { AuthModal } from '@/components/modals/AuthModal'
 import { useSocket } from '@/hooks/useSocket'
 import { useUIStore } from '@/store/uiStore'
 import api from '@/lib/api'
@@ -22,7 +21,7 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<any>({})
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const { submitProposalModal, authModal } = useUIStore()
+  const { submitProposalModal } = useUIStore()
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(searchQuery), 300)
@@ -132,7 +131,6 @@ export default function MarketplacePage() {
       )}
 
       {submitProposalModal.open && <SubmitProposalModal />}
-      {authModal && <AuthModal />}
     </div>
   )
 }

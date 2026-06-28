@@ -6,14 +6,8 @@ import { useAuth } from '@/providers/AuthProvider'
 import { useUIStore } from '@/store/uiStore'
 import { useNotifications } from '@/hooks/useNotifications'
 import { cn } from '@/lib/utils'
-import { Menu, X, Bell, MessageCircle, ChevronDown, LogOut, User, LayoutDashboard, Compass, Rocket, Briefcase } from 'lucide-react'
+import { Menu, X, Bell, MessageCircle, ChevronDown, LogOut, LayoutDashboard } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const navLinks = [
-  { href: '/marketplace', label: 'Marketplace', icon: Compass },
-  { href: '/freelancers', label: 'Freelancers', icon: User },
-  { href: '/startups', label: 'Startups', icon: Rocket },
-]
 
 export function Navbar() {
   const { user, profile, loading, signOut } = useAuth()
@@ -48,30 +42,13 @@ export function Navbar() {
               <Link href="/dashboard"
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                  pathname === '/dashboard'
-                    ? 'text-white bg-blue-500/20'
-                    : 'hover:text-white hover:bg-white/5'
+                  pathname === '/dashboard' ? 'text-white bg-blue-500/20' : 'hover:text-white hover:bg-white/5'
                 )}
-                style={{ color: pathname === '/dashboard' ? undefined : 'var(--text2)' }}
-              >
+                style={{ color: pathname === '/dashboard' ? undefined : 'var(--text2)' }}>
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </Link>
             )}
-            {navLinks.map(link => (
-              <Link key={link.href} href={link.href}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                  pathname.startsWith(link.href)
-                    ? 'text-white bg-blue-500/20'
-                    : 'hover:text-white hover:bg-white/5'
-                )}
-                style={{ color: pathname.startsWith(link.href) ? undefined : 'var(--text2)' }}
-              >
-                <link.icon className="w-4 h-4" />
-                {link.label}
-              </Link>
-            ))}
           </div>
 
           <div className="flex items-center gap-3">
@@ -90,10 +67,13 @@ export function Navbar() {
                 </Link>
                 <div className="relative" ref={menuRef}>
                   <button onClick={() => setProfileOpen(!profileOpen)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/5 transition-all"
-                  >
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/5 transition-all">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                      {profile?.full_name?.[0] || user.email?.[0] || 'U'}
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        profile?.full_name?.[0] || user.email?.[0] || 'U'
+                      )}
                     </div>
                     <ChevronDown className="w-4 h-4" style={{ color: 'var(--text3)' }} />
                   </button>
@@ -101,8 +81,7 @@ export function Navbar() {
                     {profileOpen && (
                       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                         className="absolute right-0 mt-2 w-56 rounded-2xl shadow-xl border overflow-hidden z-20"
-                        style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}
-                      >
+                        style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
                         <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
                           <p className="text-sm font-semibold text-white truncate">{profile?.full_name || 'User'}</p>
                           <p className="text-xs truncate" style={{ color: 'var(--text3)' }}>{user.email}</p>
@@ -152,20 +131,23 @@ export function Navbar() {
             <div className="px-4 py-3 space-y-1">
               {user && (
                 <Link href="/dashboard" onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-                  style={{ color: 'var(--text2)' }}>
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all" style={{ color: 'var(--text2)' }}>
                   <LayoutDashboard className="w-5 h-5" style={{ color: 'var(--text3)' }} />
                   Dashboard
                 </Link>
               )}
-              {navLinks.map(link => (
-                <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all"
-                  style={{ color: 'var(--text2)' }}>
-                  <link.icon className="w-5 h-5" style={{ color: 'var(--text3)' }} />
-                  {link.label}
-                </Link>
-              ))}
+              {!user && (
+                <>
+                  <button onClick={() => { setAuthModal('signin'); setMobileOpen(false) }}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium transition-all" style={{ color: 'var(--text2)' }}>
+                    Sign In
+                  </button>
+                  <button onClick={() => { setAuthModal('signup'); setMobileOpen(false) }}
+                    className="flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all" style={{ color: 'var(--blue)' }}>
+                    Get Started
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         )}

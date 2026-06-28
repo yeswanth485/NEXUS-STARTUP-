@@ -8,11 +8,9 @@ import { Features } from '@/components/landing/Features'
 import { HowItWorks } from '@/components/landing/HowItWorks'
 import { Testimonials } from '@/components/landing/Testimonials'
 import { Pricing } from '@/components/landing/Pricing'
-import { AuthModal } from '@/components/modals/AuthModal'
 
 function LandingContent() {
   const setAuthModal = useUIStore((s) => s.setAuthModal)
-  const authModal = useUIStore((s) => s.authModal)
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -50,8 +48,6 @@ function LandingContent() {
           </div>
         </div>
       </section>
-
-      {authModal && <AuthModal />}
     </div>
   )
 }
